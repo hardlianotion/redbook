@@ -7,9 +7,9 @@ import Try.*
 object ChapterOne:
 
   // Exercise 2.1
-  def fibonacci (n: Long): Long =
+  def fibSlow (n: Long): Long =
     if n <= 1 then n
-    else fibonacci (n - 1) + fibonacci (n - 2)
+    else fibSlow (n - 1) + fibSlow (n - 2)
 
   def fibVerify (n: Long): Long =
     ((pow ((1 + sqrt (5)) / 2.0, n) - pow ((1 - sqrt (5)) / 2.0, n)) / sqrt (5.0)).toLong
@@ -35,13 +35,13 @@ object ChapterOne:
 
       fibAttempt.fold(
         e => println (s"failure: ${e.getMessage}"),
-        fib => println (s"i = $i, attempt = $fib, verification = ${fibVerify (i)}, diff = ${fib - fibVerify (i)}")
+        fib => println (s"i = $i, $name = $fib, verification = ${fibVerify (i)}, diff = ${fib - fibVerify (i)}")
       )
 
   def runFib =
     Array (
-      ("boo fib", ChapterOne.fibonacci), ("yay fib", ChapterOne.fibForReal)).map:
-      case (name, fn) => ChapterOne.demoFib (name, fn, 45 until 50)
+      ("boo fib", ChapterOne.fibSlow), ("yay fib", ChapterOne.fibForReal)).map:
+      case (name, fn) => ChapterOne.demoFib (name, fn, 5 until 10)
 
   // Exercise 2.2
   def isSorted [A] (as: Array [A], gt: (A, A) => Boolean): Boolean =
