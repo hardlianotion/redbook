@@ -1,10 +1,10 @@
 
 import math.{pow, sqrt}
 import scala.annotation.tailrec
-import scala.util.Try
-import Try.*
+import scala.util.{Random, Try}
 
-object ChapterOne:
+
+object ChapterOneAndTwo:
 
   // Exercise 2.1
   def fibSlow (n: Long): Long =
@@ -40,8 +40,8 @@ object ChapterOne:
 
   def runFib =
     Array (
-      ("boo fib", ChapterOne.fibSlow), ("yay fib", ChapterOne.fibForReal)).map:
-      case (name, fn) => ChapterOne.demoFib (name, fn, 5 until 10)
+      ("boo fib", ChapterOneAndTwo.fibSlow), ("yay fib", ChapterOneAndTwo.fibForReal)).map:
+      case (name, fn) => ChapterOneAndTwo.demoFib (name, fn, 5 until 10)
 
   // Exercise 2.2
   def isSorted [A] (as: Array [A], gt: (A, A) => Boolean): Boolean =
@@ -70,3 +70,11 @@ object ChapterOne:
   // Exercise 2.5
   def compose [A, B, C] (f: B => C, g: A => B): A => C =
     a => f (g (a))
+
+  @main
+  def run =
+    ChapterOneAndTwo.runFib
+    val array = Array (1, 2, 3, 7, 8, 9)
+    println (ChapterOneAndTwo.isSorted(array, _ > _))
+    println (ChapterOneAndTwo.isSorted(array.reverse, _ > _))
+    println(ChapterOneAndTwo.isSorted(Random.shuffle (array).toArray, _ > _))
