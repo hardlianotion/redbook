@@ -1,14 +1,25 @@
+import ChapterThree.Calamity.{HasArrived, NotYet}
+import ChapterThree.Tree.{Branch, Leaf}
+import jdk.internal.joptsimple.internal.Messages.message
+
+import scala.annotation.tailrec
+import scala.util.{Failure, Try}
+
 object ChapterThree:
   enum List [+A]:
     case Nil
     case Cons (head: A, tail: List [A])
 
   object List:
-    def apply [A] (as: A*): List [A] =
-      if as.isEmpty then
-        Nil
-      else
-        Cons (as.head, apply (as.tail *))
+
+    def fromItems [A] (as: A*): List [A] =
+      @tailrec
+      def impl (acc: List [A], ls: Seq [A]): List [A] =
+        if ls.isEmpty then
+          acc
+        else
+          impl (Cons (ls.head, acc), ls.tail)
+      impl (Nil, as.reverse)
 
     def sum (ints: List [Int]): Int =
       ints match
@@ -49,7 +60,7 @@ object ChapterThree:
       (n, list) match
         case (_, Nil) => Nil
         case (0, ls) => ls
-        case (n, ls) => drop (ls, n - 1)
+        case (n, ls) => drop (unsafeTail (ls), n - 1)
 
     // exercise 3.5
     def dropWhile [A] (list: List [A], pred: A => Boolean): List [A] =
@@ -91,6 +102,7 @@ object ChapterThree:
       foldRight (list, 0, (_, l) => l + 1)
 
     // exercise 3.10
+    @tailrec
     def foldLeft [A, B] (list: List [A], acc: B, f: (B, A) => B): B =
       list match
         case Nil => acc
@@ -120,7 +132,7 @@ object ChapterThree:
 
     // exercise 3.15
     def flatten [A] (lol: List [List [A]]): List [A] =
-      foldLeft (reverse (lol), Nil, (b, a) => append (b, a))
+      foldLeft (lol, Nil, (b, a) => append (b, a))
 
     // utility
     def mapAsLeft [A, B] (list: List [A], f: A => B): List [B] =
@@ -155,11 +167,11 @@ object ChapterThree:
     val pruned = cand.foldLeft (list): (acc, h) =>
       acc.dropWhile (_ != h)
 
-    !pruned.isEmpty
+    pruned.nonEmpty
 
   import List.*
 
-  val result = List (1, 2, 3, 4, 5) match
+  def matchTest = List.fromItems (1, 2, 3, 4, 5) match
     case Cons (x, Cons (2, Cons (4, _))) => x
     case Nil => 42
     case Cons (x, Cons (y, Cons (3, Cons (4, _)))) => x + y
@@ -169,13 +181,32 @@ object ChapterThree:
 
   // exercise 3.8
   // it generalises!
-  val foldResult = foldRight (List (1, 2, 3), Nil: List [Int], Cons (_, _))
+  def foldResult = foldRight (List.fromItems (1, 2, 3), Nil: List [Int], Cons (_, _))
+
+  enum Calamity [T]:
+    case HasArrived (error: Throwable)
+    case NotYet (t: T)
+
+    def hasArrived: Boolean = this match
+      case HasArrived(_) => true
+      case NotYet(_) => false
+
+    def isDeferred: Boolean = this match
+      case HasArrived(_) => false
+      case NotYet(_) => true
+
+  object Calamity:
+    def apply [T] (thunk: => T): Calamity [T] =
+      try {
+        NotYet (thunk)
+      } catch {
+        case error: Throwable => HasArrived (error)
+      }
 
   // exercise 3.10
-  val testList = List ( (1 until 60000) *)
-
-  val testRight = productRight (testList)
-  val testLeft = productLeft (testList)
+  val largeList = List.fromItems ( (1 to 60000) *)
+  def testRight = productRight (largeList)
+  def testLeft = productLeft (largeList)
 
   // exercise 3.16
   def addOner (list: List [Int]): List [Int] =
@@ -231,7 +262,7 @@ object ChapterThree:
     def depth [A] (tree: Tree [A]): Int =
       tree match
         case Leaf (i) => 1
-        case Branch (l, r) => depth (l) max (depth (r))
+        case Branch (l, r) => 1 + (depth (l) max (depth (r)))
 
     // exercise 3.27
 
@@ -243,19 +274,80 @@ object ChapterThree:
     // size, maximum, depth, map
     // exercise 3.28
 
-    def fold [A, B] (tree: Tree [A], agg: B, f: (B, A) => B, g: (B, B) => B): B =
+    def fold [A, B] (tree: Tree [A], f:A => B, g: (B, B) => B): B =
       tree match
-        case Leaf (a) => f (agg, a)
-        case Branch (l, r) => g (fold (l, agg, f, g), fold (r, agg, f, g))
+        case Leaf (a) => f (a)
+        case Branch (l, r) => g (fold (l, f, g), fold (r, f, g))
 
   def size [A] (tree: Tree [A]): Int =
-    Tree.fold (tree, 0, (x, _) => x + 1, _ + _)
+    Tree.fold (tree, _ => 1, _ + _)
 
   def maximum (tree: Tree [Int]): Int =
-    Tree.fold (tree, Int.MinValue, math.max, math.max)
+    Tree.fold (tree, identity, math.max)
 
   def depth [A] (tree: Tree [A]): Int =
-    Tree.fold (tree, 0, (a, _) => a + 1, (l, r) => l max r)
+    Tree.fold (tree, _ => 1, (l, r) => 1 + l max r)
 
   def map [A, B] (tree: Tree [A], f: A => B): Tree [B] =
-    ???
+    Tree.fold (tree, a => Leaf (f (a)), (l, r) => Branch (l, r))
+
+  @main
+  def run =
+    val ls = List.fromItems (1, 2, 3, 4, 5)
+    val consLs: Cons [Int] = Cons (1, Cons (2, Cons (3, Cons (4, Cons (5, Nil)))))
+    assert (ls == Cons (1, Cons (2, Cons (3, Cons (4, Cons (5, Nil))))))
+    println (s"running list checks ...")
+    assert (matchTest == 3)
+    assert (unsafeTail (ls) == List.fromItems (2, 3, 4, 5))
+    assert (setHead (consLs, 7) == List.fromItems (7, 2, 3, 4, 5))
+    assert (addInt (List.fromItems (1, 2, 3), List.fromItems (4, 5, 6)) == List.fromItems (5, 7, 9))
+    assert (addInt (List.fromItems (1, 2, 3), List.fromItems (4, 5, 6, 7)) == List.fromItems (5, 7, 9, 7))
+    assert (drop (ls, 3) == List.fromItems (4, 5))
+    assert (dropWhile(ls, _ < 3) == List.fromItems(3, 4, 5))
+    assert (init (consLs) == List.fromItems (1, 2, 3, 4))
+    assert (productRightBreaker (ls) == 120)
+    assert (lengthRight (ls) == 5)
+    assert (foldLeft (ls, 0, _ - _) == -15)
+    assert (foldRight (ls, 0, _ - _) == 3)
+    assert (sumFold (ls) == 15)
+    assert (Calamity {productRight (largeList)}.hasArrived)
+    assert (Calamity {productLeft (largeList)}.isDeferred)
+    assert (length (largeList) == 60000)
+    assert (reverse (ls) == List.fromItems (5, 4, 3, 2, 1))
+    assert (foldRightAsLeft (ls, 0, _ - _) == 3)
+    assert (append(ls, ls) == List.fromItems (1, 2, 3, 4, 5, 1, 2, 3, 4, 5))
+    assert (flatten (List.fromItems (ls, reverse (ls))) == List.fromItems (1, 2, 3, 4, 5, 5, 4, 3, 2, 1))
+    assert (mapAsLeft (ls, _ + 1) == List.fromItems (2, 3, 4, 5, 6))
+    assert (List.map (ls, _ + 1) == List.fromItems (2, 3, 4, 5, 6))
+    assert (List.filter (ls, _ < 3) == List.fromItems (1, 2))
+    assert (List.flatMap (ls, x => List.fromItems (1, x)) == List.fromItems (1, 1, 1, 2, 1, 3, 1, 4, 1, 5))
+    assert (List.filterAsFlatMap (ls, _ < 3) == List.fromItems (1, 2))
+    assert (hasSubsequence(scala.List (1, 2, 3, 4, 5), scala.List (3, 5)))
+    assert (!hasSubsequence(scala.List (1, 2, 3, 4, 5), scala.List (5, 3)))
+    assert (addOner (List.fromItems (1, 2, 3)) == List.fromItems (2, 3, 4))
+    assert (stringer (List.map (ls, _.toDouble)) == List.fromItems ("1.0", "2.0", "3.0", "4.0", "5.0"))
+    assert (addInt (ls, reverse (ls)) == List.fromItems (6, 6, 6, 6, 6))
+    assert (combine (ls, reverse (ls), _ + _) == List.fromItems (6, 6, 6, 6, 6))
+
+    val tree = Branch (
+                Branch (Leaf (1), Leaf (2)),
+                Branch (Leaf (3), Leaf (4))
+              )
+    val shifted = Branch (
+                    Branch (Leaf (2), Leaf (3)),
+                    Branch (Leaf (4), Leaf (5))
+                  )
+
+    println (s"running tree checks ...${depth (tree)}")
+    assert (Tree.size (tree) == 4)
+    assert (Tree.maximum (tree) == 4)
+    assert (Tree.depth (tree) == 3)
+    assert (Tree.map (tree, _ + 1) == shifted)
+
+    // fold version
+    assert (size (tree) == 4)
+    assert (maximum (tree) == 4)
+    assert (depth (tree) == 3)
+    assert (map (tree, _ + 1) == shifted)
+
+    println (s"done")

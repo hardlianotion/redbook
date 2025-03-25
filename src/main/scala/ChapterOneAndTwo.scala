@@ -71,10 +71,9 @@ object ChapterOneAndTwo:
   def compose [A, B, C] (f: B => C, g: A => B): A => C =
     a => f (g (a))
 
-  @main
   def run =
     ChapterOneAndTwo.runFib
     val array = Array (1, 2, 3, 7, 8, 9)
-    println (ChapterOneAndTwo.isSorted(array, _ > _))
-    println (ChapterOneAndTwo.isSorted(array.reverse, _ > _))
-    println(ChapterOneAndTwo.isSorted(Random.shuffle (array).toArray, _ > _))
+    assert (ChapterOneAndTwo.isSorted(array, _ > _))
+    assert (ChapterOneAndTwo.isSorted(array.reverse, _ > _))
+    assert (!ChapterOneAndTwo.isSorted(Random.shuffle (array).toArray, _ > _))
