@@ -126,6 +126,17 @@ object ChapterThree:
     def foldRightAsLeft [A, B] (list: List [A], acc: B, f: (A, B) => B): B =
       foldLeft (reverse (list), acc, (a, b) => f (b, a))
 
+    def foldRightAsLeftLux [A, B] (list: List [A], acc: B, f: (A, B) => B): B =
+      val step = (acc: B => B, a: A) => (b: B) => f (a, acc (b))
+      foldLeft [A, B => B] (list, identity, step) (acc)
+
+    def foldLeftAsRight [A, B] (list: List [A], acc: B, f: (B, A) => B): B =
+      foldRight (reverse (list), acc, (a, b) => f (b, a))
+
+    def foldLeftAsRightLux [A, B] (list: List [A], acc: B, f: (B, A) => B): B =
+      val step = (a: A, acc: B => B) => (b: B) => acc (f (b, a))
+      foldRight [A, B => B] (list, identity, step) (acc)
+
     // exercise 3.14
     def append [A] (left: List [A], right: List [A]): List [A] =
       foldLeft (reverse (left), right, (acc, r) => Cons (r, acc))
@@ -314,7 +325,10 @@ object ChapterThree:
     assert (Calamity {productLeft (largeList)}.isDeferred)
     assert (length (largeList) == 60000)
     assert (reverse (ls) == List.fromItems (5, 4, 3, 2, 1))
+    assert (foldLeftAsRight (ls, 0, _ - _) == -15)
+    assert (foldLeftAsRightLux (ls, 0, _ - _) == -15)
     assert (foldRightAsLeft (ls, 0, _ - _) == 3)
+    assert (foldRightAsLeftLux (ls, 0, _ - _) == 3)
     assert (append(ls, ls) == List.fromItems (1, 2, 3, 4, 5, 1, 2, 3, 4, 5))
     assert (flatten (List.fromItems (ls, reverse (ls))) == List.fromItems (1, 2, 3, 4, 5, 5, 4, 3, 2, 1))
     assert (mapAsLeft (ls, _ + 1) == List.fromItems (2, 3, 4, 5, 6))
@@ -338,7 +352,7 @@ object ChapterThree:
                     Branch (Leaf (4), Leaf (5))
                   )
 
-    println (s"running tree checks ...${depth (tree)}")
+    println (s"running tree checks ...")
     assert (Tree.size (tree) == 4)
     assert (Tree.maximum (tree) == 4)
     assert (Tree.depth (tree) == 3)
