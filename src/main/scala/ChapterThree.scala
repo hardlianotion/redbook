@@ -302,7 +302,6 @@ object ChapterThree:
   def map [A, B] (tree: Tree [A], f: A => B): Tree [B] =
     Tree.fold (tree, a => Leaf (f (a)), (l, r) => Branch (l, r))
 
-  @main
   def run =
     val ls = List.fromItems (1, 2, 3, 4, 5)
     val consLs: Cons [Int] = Cons (1, Cons (2, Cons (3, Cons (4, Cons (5, Nil)))))
