@@ -28,7 +28,12 @@ object ChapterFour:
         else
           None
 
-import ChapterFour.Option.{None, Some}
+  object Option:
+    def lift [A, B] (f: A => B): Option [A] => Option [B] =
+      _.map (f)
+
+
+import ChapterFour.Option.*
 import ChapterFour.Option
 
   @main
@@ -48,3 +53,20 @@ import ChapterFour.Option
     assert (someOne.filter (_ == 2) == None)
     assert (noOne.filter (_ == 1) == None)
     assert (noOne.filter (_ == 2) == None)
+
+    val numbers = Seq.from (1 to 10).map (_.toDouble)
+
+    def mean (numbers: Seq [Double]): Option [Double] =
+      if numbers.isEmpty then
+        None
+      else
+        Some (numbers.sum / numbers.length)
+
+    def variance (numbers: Seq [Double]): Option [Double] =
+      if numbers.length < 2 then
+        None
+      else
+        val sMean = mean (numbers)
+        sMean.map (
+          sm => numbers.map (n => (n - sm) * (n - sm)).sum / (numbers.length - 1)
+        )
