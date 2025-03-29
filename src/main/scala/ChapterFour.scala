@@ -54,7 +54,17 @@ import ChapterFour.Option
     assert (noOne.filter (_ == 1) == None)
     assert (noOne.filter (_ == 2) == None)
 
+    def defined [A] (mibbe: Option [A]): Boolean =
+      mibbe match
+        case None => false
+        case _ => true
+
+    def undefined [A] (mibbe: Option [A]): Boolean =
+      !defined (mibbe)
+
     val numbers = Seq.from (1 to 10).map (_.toDouble)
+    val noNumbers = Seq.empty [Double]
+    val number = Seq (1.0)
 
     def mean (numbers: Seq [Double]): Option [Double] =
       if numbers.isEmpty then
@@ -70,3 +80,10 @@ import ChapterFour.Option
         sMean.map (
           sm => numbers.map (n => (n - sm) * (n - sm)).sum / (numbers.length - 1)
         )
+
+    assert (defined (mean (numbers)))
+    assert (defined (mean (number)))
+    assert (undefined (mean (noNumbers)))
+    assert (defined (variance (numbers)))
+    assert (undefined (variance (number)))
+    assert (undefined (variance (noNumbers)))
